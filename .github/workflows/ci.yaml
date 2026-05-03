@@ -2,11 +2,8 @@ name: CI
 
 on:
   push:
-    paths:
-      - "**/*.go"
-      - "**/*.tf"
     branches:
-      - main
+      - master
       - dev
   pull_request:
     branches:
