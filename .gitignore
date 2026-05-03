@@ -1,0 +1,4 @@
+/postgres-data
+.env
+/.cache
+/.cursor
