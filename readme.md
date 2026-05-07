@@ -2,11 +2,9 @@
 Implement production grade CI/CD pipeline.
 
 # To do List
-- [ ] Finish Go app
-- [ ] Setup database
-- [ ] Setup docker container
-- [ ] Add caching with Redis
+- [x] Finish Go app
+- [x] Setup database
+- [x] Setup docker container
+- [x] Setup Monitoring
 - [ ] Setup Cloud Infra using Terraform in AWS
-- [ ] Setup Monitoring
 - [ ] Setup Traefik
-- [ ]
