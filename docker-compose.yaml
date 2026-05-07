@@ -38,14 +38,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  redis:
-    image: redis:latest
-    container_name: redis
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
     ports:
-      - "6379:6379"
+      - "8081:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
     networks:
       - devops-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yaml
+    networks:
+      - devops-network
+  
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - devops-network 
 
 networks:
   devops-network:
