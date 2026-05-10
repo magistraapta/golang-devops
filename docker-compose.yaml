@@ -38,17 +38,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    ports:
-      - "8081:80"
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@example.com
-      - PGADMIN_DEFAULT_PASSWORD=password
-    networks:
-      - devops-network
 
   prometheus:
     image: prom/prometheus
@@ -57,19 +46,24 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yaml
+    restart: unless-stopped
     networks:
       - devops-network
   
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana-enterprise
     container_name: grafana
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
     networks:
       - devops-network 
 
+volumes:
+  grafana-data:
 networks:
   devops-network:
     driver: bridge
