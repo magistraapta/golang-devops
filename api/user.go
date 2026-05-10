@@ -15,11 +15,14 @@ func UserRoutes(router *gin.Engine) {
 	userHandler := handler.NewUserHandler(userService)
 
 	// user routes
-	userGroup := router.Group("/users")
-	userGroup.POST("/", userHandler.CreateUser)
-	userGroup.GET("/", userHandler.GetAllUsers)
-	userGroup.GET("/:id", userHandler.GetUserByID)
-	userGroup.GET("/email/:email", userHandler.GetUserByEmail)
-	userGroup.PUT("/:id", userHandler.UpdateUser)
-	userGroup.DELETE("/:id", userHandler.DeleteUser)
+	userGroup := router.Group("/api/v1/users")
+	{
+		userGroup.POST("/", userHandler.CreateUser)
+		userGroup.GET("/", userHandler.GetAllUsers)
+		userGroup.GET("/:id", userHandler.GetUserByID)
+		userGroup.GET("/email/:email", userHandler.GetUserByEmail)
+		userGroup.PUT("/:id", userHandler.UpdateUser)
+		userGroup.DELETE("/:id", userHandler.DeleteUser)
+	}
+
 }

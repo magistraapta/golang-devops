@@ -1,0 +1,41 @@
+{{define "content"}}
+<div>
+    <h1>Hello World</h1>
+
+    <div>
+        <h2>User List</h2>
+
+        {{if .Users}}
+        <table>
+            <thead>                      <!-- ✅ wraps header row -->
+                <tr>                     <!-- ✅ th must be inside a tr -->
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Created At</th>
+                    <th>Updated At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>                      <!-- ✅ wraps data rows -->
+                {{range .Users}}
+                <tr>
+                    <td>{{.Username}}</td>
+                    <td>{{.Email}}</td>
+                    <td>{{.CreatedAt}}</td>
+                    <td>{{.UpdatedAt}}</td>
+                    <td>
+                        <a href="/users/{{.ID}}">View</a>
+                        <a href="/users/{{.ID}}/edit">Edit</a>
+                        <a href="/users/{{.ID}}/delete">Delete</a>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+            <p>No users found.</p>      <!-- ✅ handle empty state -->
+        {{end}}
+
+    </div>
+</div>
+{{end}}

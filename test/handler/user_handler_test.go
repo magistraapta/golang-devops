@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -26,8 +27,13 @@ func (s *fakeUserService) CreateUser(user *model.User) error {
 	return s.createErr
 }
 
-func (s *fakeUserService) GetUserByID(id uuid.UUID) (*model.User, error) {
-	return nil, nil
+func (s *fakeUserService) GetUserByID(context context.Context, id uuid.UUID) (*model.User, error) {
+	for _, u := range s.users {
+		if u.ID == id {
+			return &u, nil
+		}
+	}
+	return nil, errors.New("user not found")
 }
 
 func (s *fakeUserService) GetUserByEmail(email string) (*model.User, error) {
@@ -53,6 +59,7 @@ func newTestRouter(userService *fakeUserService) *gin.Engine {
 	userHandler := handler.NewUserHandler(userService)
 	router.POST("/users/", userHandler.CreateUser)
 	router.GET("/users/", userHandler.GetAllUsers)
+	router.GET("/users/:id", userHandler.GetUserByID)
 
 	return router
 }
@@ -138,5 +145,38 @@ func TestUserHandlerGetAllUsersReturnsData(t *testing.T) {
 	responseBody := response.Body.String()
 	if !strings.Contains(responseBody, "alice@example.com") {
 		t.Fatalf("expected user email in response, got %s", responseBody)
+	}
+}
+
+func TestGetUserDetailByID(t *testing.T) {
+	// ✅ Save the UUID so we can use it in the URL
+	aliceID := uuid.New()
+
+	userService := &fakeUserService{
+		users: []model.User{
+			{ID: aliceID, Username: "Alice", Email: "alice@example.com"},
+			{ID: uuid.New(), Username: "Bob", Email: "bob@example.com"},
+		},
+	}
+	router := newTestRouter(userService)
+
+	// ✅ Use the real UUID in the URL path
+	response := performRequest(router, http.MethodGet, "/users/"+aliceID.String(), "")
+
+	// ✅ Assert correct status
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+	}
+
+	body := response.Body.String()
+
+	// ✅ Only assert the requested user appears
+	if !strings.Contains(body, "alice@example.com") {
+		t.Fatalf("expected alice@example.com in response, got %s", body)
+	}
+
+	// ✅ Assert the OTHER user does NOT appear
+	if strings.Contains(body, "bob@example.com") {
+		t.Fatalf("bob@example.com should not appear in a single user response")
 	}
 }

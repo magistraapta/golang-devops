@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 
 type UserService interface {
 	CreateUser(user *model.User) error
-	GetUserByID(id uuid.UUID) (*model.User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetUserByEmail(email string) (*model.User, error)
 	UpdateUser(user *model.User) error
 	DeleteUser(id uuid.UUID) error
@@ -55,7 +56,7 @@ func (s *userService) CreateUser(user *model.User) error {
 	return nil
 }
 
-func (s *userService) GetUserByID(id uuid.UUID) (*model.User, error) {
+func (s *userService) GetUserByID(context context.Context, id uuid.UUID) (*model.User, error) {
 	user, err := s.userRepository.GetUserByID(id)
 	if err != nil {
 		return nil, &utils.CustomError{Message: "Failed to get user", Code: http.StatusInternalServerError}

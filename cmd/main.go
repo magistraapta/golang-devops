@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	"html/template"
 	"net/http"
 	"os"
 	"time"
@@ -16,16 +18,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+//go:embed templates/*.html templates/pages/*.html
+var files embed.FS
+
 func main() {
 	config.LoadEnv()
 	router := gin.Default()
 	metrics.RunMetrics(10 * time.Second)
 	router.Use(middleware.HTTPMiddleware())
 
-	// root endpoint
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "Hello"})
-	})
+	templ := template.Must(template.New("").ParseFS(files,
+		"templates/*.html",
+		"templates/pages/*.html",
+	))
+	router.SetHTMLTemplate(templ)
 
 	// health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -33,6 +39,7 @@ func main() {
 	})
 
 	api.UserRoutes(router)
+	api.FrontendRoutes(router)
 
 	reg := prometheus.NewRegistry()
 	metrics.RegisterAllMetrics(reg)

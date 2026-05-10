@@ -1,0 +1,20 @@
+{{define "user-details.html"}}
+<div>
+    <h1>User Detail</h1>
+
+    {{if .User}}
+        <p>ID: {{.User.ID}}</p>
+        <p>Name: {{.User.Username}}</p>
+        <p>Email: {{.User.Email}}</p>
+        <p>Created At: {{.User.CreatedAt.Format "2006-01-02 15:04:05"}}</p>
+        <p>Updated At: {{.User.UpdatedAt.Format "2006-01-02 15:04:05"}}</p>
+
+        <a href="/users/{{.User.ID}}/edit">Edit</a>
+        <form action="/users/{{.User.ID}}/delete" method="POST">
+            <button type="submit">Delete</button>
+        </form>
+    {{else}}
+        <p>User not found.</p>
+    {{end}}
+</div>
+{{end}}

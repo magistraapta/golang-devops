@@ -50,7 +50,7 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 
 func (h *userHandler) GetUserByID(c *gin.Context) {
 	id := c.Param("id")
-	user, err := h.userService.GetUserByID(uuid.MustParse(id))
+	user, err := h.userService.GetUserByID(c.Request.Context(), uuid.MustParse(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -70,7 +70,7 @@ func (h *userHandler) GetUserByEmail(c *gin.Context) {
 
 func (h *userHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	user, err := h.userService.GetUserByID(uuid.MustParse(id))
+	user, err := h.userService.GetUserByID(c.Request.Context(), uuid.MustParse(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
