@@ -23,7 +23,7 @@ func NewFrontendHandler(userService service.UserService) FrontendHandler {
 }
 
 func (h *frontendHandler) HomeHandler(c *gin.Context) {
-	users, err := h.userService.GetAllUsers()
+	users, err := h.userService.GetAllUsers(c)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"Title": "Error",

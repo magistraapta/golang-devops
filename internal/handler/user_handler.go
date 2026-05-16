@@ -27,7 +27,7 @@ func NewUserHandler(userService service.UserService) UserHandler {
 }
 
 func (h *userHandler) GetAllUsers(c *gin.Context) {
-	users, err := h.userService.GetAllUsers()
+	users, err := h.userService.GetAllUsers(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -41,7 +41,7 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.userService.CreateUser(&user); err != nil {
+	if err := h.userService.CreateUser(c, &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -60,7 +60,7 @@ func (h *userHandler) GetUserByID(c *gin.Context) {
 
 func (h *userHandler) GetUserByEmail(c *gin.Context) {
 	email := c.Param("email")
-	user, err := h.userService.GetUserByEmail(email)
+	user, err := h.userService.GetUserByEmail(c, email)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -84,7 +84,7 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 
 	user.ID = uuid.MustParse(id) // ← force the correct ID after binding
 
-	if err := h.userService.UpdateUser(user); err != nil {
+	if err := h.userService.UpdateUser(c, user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -94,7 +94,7 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 
 func (h *userHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.userService.DeleteUser(uuid.MustParse(id)); err != nil {
+	if err := h.userService.DeleteUser(c, uuid.MustParse(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

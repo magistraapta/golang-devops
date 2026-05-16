@@ -1,21 +1,27 @@
 package repository
 
 import (
+	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/magistraapta/golang-devops/internal/model"
 	"gorm.io/gorm"
 )
 
+var (
+	ErrUserNotFound   = errors.New("user not found")
+	ErrDuplicateEmail = errors.New("email already exists")
+)
+
 type UserRepository interface {
-	CreateUser(user *model.User) error
-	GetUserByID(id uuid.UUID) (*model.User, error)
-	GetUserByEmail(email string) (*model.User, error)
-	UpdateUser(user *model.User) error
-	DeleteUser(id uuid.UUID) error
-	GetAllUsers() ([]model.User, error)
+	CreateUser(ctx context.Context, user *model.User) error
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	UpdateUser(ctx context.Context, user *model.User) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
+	GetAllUsers(ctx context.Context) ([]model.User, error)
 }
 
 type userRepository struct {
@@ -26,45 +32,69 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) GetAllUsers() ([]model.User, error) {
+func (r *userRepository) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	var users []model.User
-	if err := r.db.Find(&users).Error; err != nil {
-		return nil, err
+	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
+		return nil, fmt.Errorf("GetAllUsers: %w", err)
 	}
 	return users, nil
 }
 
-func (r *userRepository) CreateUser(user *model.User) error {
-	return r.db.Create(user).Error
-}
-
-func (r *userRepository) GetUserByID(id uuid.UUID) (*model.User, error) {
-	var user model.User
-	if err := r.db.Where("id = ?", id).First(&user).Error; err != nil {
-		return nil, err
+func (r *userRepository) CreateUser(ctx context.Context, user *model.User) error {
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+		return fmt.Errorf("CreateUser: %w", err)
 	}
-	return &user, nil
+	return nil
 }
 
-func (r *userRepository) GetUserByEmail(email string) (*model.User, error) {
+func (r *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	var user model.User
-	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("GetUserByID: %w", err)
 	}
 	return &user, nil
 }
 
-func (r *userRepository) UpdateUser(user *model.User) error {
-	return r.db.Model(&model.User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
-		"username":   user.Username,
-		"email":      user.Email,
-		"updated_at": time.Now(),
-	}).Error
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("GetUserByEmail: %w", err)
+	}
+	return &user, nil
 }
 
-func (r *userRepository) DeleteUser(id uuid.UUID) error {
-	return r.db.Delete(&model.User{}, id).Where("id = ?", id).Error
+func (r *userRepository) UpdateUser(ctx context.Context, user *model.User) error {
+	result := r.db.WithContext(ctx).
+		Model(user).
+		Where("id = ?", user.ID).
+		Updates(model.User{
+			Username: user.Username,
+			Email:    user.Email,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("UpdateUser: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.User{})
+	if result.Error != nil {
+		return fmt.Errorf("DeleteUser: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrUserNotFound
+	}
+	return nil
 }
