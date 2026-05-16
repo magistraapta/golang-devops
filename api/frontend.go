@@ -19,6 +19,6 @@ func FrontendRoutes(router *gin.Engine) {
 	{
 		frontendGroup.GET("/", frontendHandler.HomeHandler)
 		frontendGroup.GET("/users/:id", frontendHandler.UserDetailHandler)
-
+		frontendGroup.GET("/users/:id/edit", frontendHandler.UserEditHandler)
 	}
 }

@@ -38,4 +38,16 @@
 
     </div>
 </div>
+<script>
+    async function deleteUser(id) {
+        const res = await fetch(`/api/v1/users/${id}`, {
+            method: "DELETE",
+        });
+        if (res.ok) window.location.href = "/users";
+        else {
+            const data = await res.json();
+            alert("Error: " + data.error);
+        }
+    }
+</script>
 {{end}}

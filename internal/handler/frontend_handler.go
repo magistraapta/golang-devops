@@ -11,6 +11,7 @@ import (
 type FrontendHandler interface {
 	HomeHandler(c *gin.Context)
 	UserDetailHandler(c *gin.Context)
+	UserEditHandler(c *gin.Context)
 }
 
 type frontendHandler struct {
@@ -60,6 +61,33 @@ func (h *frontendHandler) UserDetailHandler(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "user-details.html", gin.H{
 		"Title": user.Username,
+		"User":  user,
+	})
+}
+
+func (h *frontendHandler) UserEditHandler(c *gin.Context) {
+	id := c.Param("id")
+	userID, err := uuid.Parse(id)
+
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title": "Error",
+			"Error": err.Error(),
+		})
+		return
+	}
+
+	user, err := h.userService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"Title": "Error",
+			"Error": err.Error(),
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "edit.html", gin.H{
+		"Title": "Edit User",
 		"User":  user,
 	})
 }

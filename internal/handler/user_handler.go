@@ -70,19 +70,25 @@ func (h *userHandler) GetUserByEmail(c *gin.Context) {
 
 func (h *userHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
+
 	user, err := h.userService.GetUserByID(c.Request.Context(), uuid.MustParse(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
+
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	user.ID = uuid.MustParse(id) // ← force the correct ID after binding
+
 	if err := h.userService.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
 

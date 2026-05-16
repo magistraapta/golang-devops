@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/magistraapta/golang-devops/internal/model"
@@ -57,9 +58,13 @@ func (r *userRepository) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (r *userRepository) UpdateUser(user *model.User) error {
-	return r.db.Save(user).Error
+	return r.db.Model(&model.User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+		"username":   user.Username,
+		"email":      user.Email,
+		"updated_at": time.Now(),
+	}).Error
 }
 
 func (r *userRepository) DeleteUser(id uuid.UUID) error {
-	return r.db.Delete(&model.User{}, id).Error
+	return r.db.Delete(&model.User{}, id).Where("id = ?", id).Error
 }
