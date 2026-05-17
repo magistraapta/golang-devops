@@ -64,7 +64,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
+			return nil, nil // ← not found is not an error for email lookup
 		}
 		return nil, fmt.Errorf("GetUserByEmail: %w", err)
 	}

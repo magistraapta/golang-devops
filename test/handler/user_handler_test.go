@@ -19,15 +19,17 @@ type fakeUserService struct {
 	createErr   error
 	createdUser *model.User
 	users       []model.User
+	deleteErr   error
+	updateErr   error // ← add this
 }
 
-func (s *fakeUserService) CreateUser(user *model.User) error {
+func (s *fakeUserService) CreateUser(ctx context.Context, user *model.User) error {
 	copiedUser := *user
 	s.createdUser = &copiedUser
 	return s.createErr
 }
 
-func (s *fakeUserService) GetUserByID(context context.Context, id uuid.UUID) (*model.User, error) {
+func (s *fakeUserService) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	for _, u := range s.users {
 		if u.ID == id {
 			return &u, nil
@@ -36,19 +38,19 @@ func (s *fakeUserService) GetUserByID(context context.Context, id uuid.UUID) (*m
 	return nil, errors.New("user not found")
 }
 
-func (s *fakeUserService) GetUserByEmail(email string) (*model.User, error) {
+func (s *fakeUserService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	return nil, nil
 }
 
-func (s *fakeUserService) UpdateUser(user *model.User) error {
+func (s *fakeUserService) UpdateUser(ctx context.Context, user *model.User) error {
 	return nil
 }
 
-func (s *fakeUserService) DeleteUser(id uuid.UUID) error {
-	return nil
+func (s *fakeUserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return s.deleteErr
 }
 
-func (s *fakeUserService) GetAllUsers() ([]model.User, error) {
+func (s *fakeUserService) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	return s.users, nil
 }
 
@@ -178,5 +180,104 @@ func TestGetUserDetailByID(t *testing.T) {
 	// ✅ Assert the OTHER user does NOT appear
 	if strings.Contains(body, "bob@example.com") {
 		t.Fatalf("bob@example.com should not appear in a single user response")
+	}
+}
+
+func TestUserHandlerGetUserByID_NotFound(t *testing.T) {
+	userService := &fakeUserService{users: []model.User{}}
+	router := newTestRouter(userService)
+
+	response := performRequest(router, http.MethodGet, "/users/"+uuid.New().String(), "")
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d", http.StatusNotFound, response.Code)
+	}
+	if !strings.Contains(response.Body.String(), "User not found") {
+		t.Fatalf("expected 'User not found' in response, got %s", response.Body.String())
+	}
+}
+
+func TestUserHandlerUpdateUser_Success(t *testing.T) {
+	userID := uuid.New()
+	userService := &fakeUserService{
+		users: []model.User{
+			{ID: userID, Username: "Alice", Email: "alice@example.com"},
+		},
+	}
+	router := gin.New()
+	userHandler := handler.NewUserHandler(userService)
+	router.PUT("/users/:id", userHandler.UpdateUser)
+
+	body := `{"username":"Alice_Updated","email":"newalice@example.com"}`
+	response := performRequest(router, http.MethodPut, "/users/"+userID.String(), body)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+	}
+	if !strings.Contains(response.Body.String(), "User updated successfully") {
+		t.Fatalf("expected success message, got %s", response.Body.String())
+	}
+}
+
+func TestUserHandlerUpdateUser_InvalidJSON(t *testing.T) {
+	userID := uuid.New()
+	userService := &fakeUserService{
+		users: []model.User{
+			{ID: userID, Username: "Alice", Email: "alice@example.com"},
+		},
+	}
+	router := gin.New()
+	userHandler := handler.NewUserHandler(userService)
+	router.PUT("/users/:id", userHandler.UpdateUser)
+
+	response := performRequest(router, http.MethodPut, "/users/"+userID.String(), `{"username":`)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, response.Code)
+	}
+}
+
+func TestUserHandlerUpdateUser_NotFound(t *testing.T) {
+	userService := &fakeUserService{users: []model.User{}}
+	router := gin.New()
+	userHandler := handler.NewUserHandler(userService)
+	router.PUT("/users/:id", userHandler.UpdateUser)
+
+	body := `{"username":"Updated","email":"updated@example.com"}`
+	response := performRequest(router, http.MethodPut, "/users/"+uuid.New().String(), body)
+
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d", http.StatusNotFound, response.Code)
+	}
+}
+
+func TestUserHandlerDeleteUser_Success(t *testing.T) {
+	userService := &fakeUserService{}
+	router := gin.New()
+	userHandler := handler.NewUserHandler(userService)
+	router.DELETE("/users/:id", userHandler.DeleteUser)
+
+	response := performRequest(router, http.MethodDelete, "/users/"+uuid.New().String(), "")
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+	}
+	if !strings.Contains(response.Body.String(), "User deleted successfully") {
+		t.Fatalf("expected success message, got %s", response.Body.String())
+	}
+}
+
+func TestUserHandlerDeleteUser_Error(t *testing.T) {
+	userService := &fakeUserService{}
+	userService.deleteErr = errors.New("delete failed")
+
+	router := gin.New()
+	userHandler := handler.NewUserHandler(userService)
+	router.DELETE("/users/:id", userHandler.DeleteUser)
+
+	response := performRequest(router, http.MethodDelete, "/users/"+uuid.New().String(), "")
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, response.Code)
 	}
 }

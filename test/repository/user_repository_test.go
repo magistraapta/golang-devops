@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ func newTestUserRepository(t *testing.T) repository.UserRepository {
 }
 
 func TestUserRepositoryCreateAndGetAllUsers(t *testing.T) {
+	ctx := context.Background()
 	userRepository := newTestUserRepository(t)
 	user := &model.User{
 		ID:       uuid.New(),
@@ -34,11 +36,11 @@ func TestUserRepositoryCreateAndGetAllUsers(t *testing.T) {
 		Password: "hashed-password",
 	}
 
-	if err := userRepository.CreateUser(user); err != nil {
+	if err := userRepository.CreateUser(ctx, user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 
-	users, err := userRepository.GetAllUsers()
+	users, err := userRepository.GetAllUsers(ctx)
 	if err != nil {
 		t.Fatalf("get all users: %v", err)
 	}
@@ -52,11 +54,12 @@ func TestUserRepositoryCreateAndGetAllUsers(t *testing.T) {
 }
 
 func TestUserRepositoryGetUserByEmailReturnsNilWhenMissing(t *testing.T) {
+	ctx := context.Background()
 	userRepository := newTestUserRepository(t)
 
-	user, err := userRepository.GetUserByEmail("missing@example.com")
+	user, err := userRepository.GetUserByEmail(ctx, "missing@example.com")
 	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+		t.Fatalf("expected ErrUserNotFound, got %v", err)
 	}
 	if user != nil {
 		t.Fatalf("expected nil user, got %+v", user)
