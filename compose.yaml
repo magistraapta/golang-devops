@@ -1,0 +1,57 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+services:
+  # The Gin app. Note there is no `ports:` mapping — it is deliberately NOT
+  # reachable from the host directly. All traffic arrives through Traefik.
+  server:
+    build:
+      context: .
+      target: final
+    environment:
+      GIN_MODE: release
+    expose:
+      - 8080
+    networks:
+      - edge
+    labels:
+      # Opt this container in to Traefik (required, see exposedByDefault in traefik.yml).
+      - traefik.enable=true
+      # Router: which requests belong to this service.
+      - traefik.http.routers.server.rule=Host(`api.localhost`)
+      - traefik.http.routers.server.entrypoints=web
+      # Service: where Traefik forwards them. This is the port INSIDE the
+      # container — Traefik reaches it over the `edge` network, not via the host.
+      - traefik.http.services.server.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  traefik:
+    image: traefik:v3.7
+    ports:
+      - "80:80"
+      - "8001:8000"
+    volumes:
+      # Static config. Traefik reads /etc/traefik/traefik.yml by default.
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      # How Traefik discovers containers and their labels. Mounted read-only,
+      # but note that Docker socket access is effectively root on the host —
+      # fine for local dev, use a socket proxy in production.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - edge
+    labels:
+      # Traefik routing its own dashboard, via the built-in api@internal service.
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.dashboard.entrypoints=web
+      - traefik.http.routers.dashboard.service=api@internal
+
+# Traefik can only route to a container that shares a network with it.
+networks:
+  edge:
