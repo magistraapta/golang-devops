@@ -15,9 +15,13 @@ services:
       - 8080
     networks:
       - edge
+      - monitoring
     labels:
       # Opt this container in to Traefik (required, see exposedByDefault in traefik.yml).
       - traefik.enable=true
+      # server is on two networks (edge, monitoring); tell Traefik which one
+      # to route through, since Traefik itself only joins edge.
+      - traefik.docker.network=backend_edge
       # Router: which requests belong to this service.
       - traefik.http.routers.server.rule=Host(`localhost`)
       - traefik.http.routers.server.entrypoints=web
@@ -55,3 +59,8 @@ services:
 # Traefik can only route to a container that shares a network with it.
 networks:
   edge:
+  # Shared with monitoring/docker-compose.yaml so Prometheus can scrape
+  # `server:8080/metrics` across the two Compose projects. Must exist before
+  # either stack is started: `docker network create monitoring`.
+  monitoring:
+    external: true

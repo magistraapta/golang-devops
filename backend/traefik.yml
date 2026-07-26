@@ -21,7 +21,7 @@ providers:
     # published, which is almost never what you want.
     exposedByDefault: false
     # Only watch containers in this Compose project.
-    constraints: "Label(`com.docker.compose.project`,`golang-devops`)"
+    constraints: "Label(`com.docker.compose.project`,`backend`)"
 
 api:
   dashboard: true

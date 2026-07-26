@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
@@ -14,6 +15,7 @@ func main() {
 
 	router.GET("/", RenderIndex)
 	router.GET("/health", CheckHealth)
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	fmt.Println("Server is running at port: 8080")
 	if err := router.Run(":8080"); err != nil {
