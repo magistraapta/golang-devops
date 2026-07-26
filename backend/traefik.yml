@@ -1,0 +1,32 @@
+# Traefik STATIC configuration.
+# Static = read once at startup. Changing this file requires restarting Traefik.
+# (Routes/middlewares are DYNAMIC config — those come from the Docker labels
+# in compose.yaml, and are picked up live without a restart.)
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+# Entrypoints are the ports Traefik listens on for incoming traffic.
+entryPoints:
+  web:
+    address: ":80"
+
+# The Docker provider watches the Docker socket and builds routes from
+# container labels.
+providers:
+  docker:
+    # Never route a container unless it explicitly opts in with
+    # `traefik.enable=true`. Without this, every container on the host gets
+    # published, which is almost never what you want.
+    exposedByDefault: false
+    # Only watch containers in this Compose project.
+    constraints: "Label(`com.docker.compose.project`,`golang-devops`)"
+
+api:
+  dashboard: true
+
+log:
+  level: INFO
+
+accessLog: {}
